@@ -2,6 +2,8 @@
 
 namespace Sirian\YMLParser\Offer;
 
+use Sirian\YMLParser\Param;
+
 class VendorModelOffer extends Offer
 {
     protected $vendor;
@@ -43,14 +45,19 @@ class VendorModelOffer extends Offer
         return $this;
     }
 
+    public function getParam($name)
+    {
+        return isset($this->params[$name]) ? $this->params[$name] : null;
+    }
+
     public function getParams()
     {
         return $this->params;
     }
 
-    public function addParam($param)
+    public function addParam(Param $param)
     {
-        $this->params[] = (string)$param;
+        $this->params[$param->getName()] = $param;
         return $this;
     }
 
