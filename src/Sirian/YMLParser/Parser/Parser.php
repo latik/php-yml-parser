@@ -4,7 +4,6 @@ namespace Sirian\YMLParser\Parser;
 
 use Sirian\YMLParser\Exception\UnsupportedOfferTypeException;
 use Sirian\YMLParser\Factory\Factory;
-use Sirian\YMLParser\Offer\VendorModelOffer;
 use Sirian\YMLParser\Shop;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -160,17 +159,14 @@ class Parser extends EventDispatcher
         return $category;
     }
 
-    protected function createParam(\SimpleXMLElement $elem)
+    protected function createParam($name, $value, $unit = null)
     {
-        $name = (string)$elem['name'];
-        $unit = (string)$elem['unit'];
-
         $param = $this->factory->createParam();
 
         $param
-            ->setName($name)
-            ->setUnit($unit)
-            ->setValue((string)$elem)
+            ->setName((string)$name)
+            ->setUnit((string)$unit)
+            ->setValue((string)$value)
         ;
 
         return $param;
@@ -196,18 +192,28 @@ class Parser extends EventDispatcher
             ->setXml($elem)
         ;
 
-        if ($offer instanceof VendorModelOffer) {
-            foreach ($elem->param as $param) {
-                $offer->addParam($this->createParam($param));
-            }
-        }
-
         foreach ($elem as $field => $value) {
-            foreach (['add', 'set'] as $method) {
-                $method .= $this->camelize($field);
-                if (!in_array($field, ['param']) && method_exists($offer, $method)) {
-                    call_user_func([$offer, $method], count($value->children()) ? $value : (string)$value);
-                    break;
+            if ($field == 'param') {
+                $offer->addParam(
+                    $this->createParam($elem->$field['name'], $value, $elem->$field['unit'])
+                );
+            } elseif ($field == 'add_params') {
+                foreach ($value->add_param as $param) {
+                    $offer->addParam(
+                        $this->createParam($param['name'], $param, $param['unit'])
+                    );
+                }
+            } else {
+                foreach (['add', 'set'] as $method) {
+                    $method .= $this->camelize($field);
+                    if (!in_array($field, ['param', 'add_params'])) {
+                        if (method_exists($offer, $method)) {
+                            call_user_func([$offer, $method], count($value->children()) ? $value : (string)$value);
+                            break;
+                        } else {
+                            $offer->addParam($this->createParam($field, $value));
+                        }
+                    }
                 }
             }
         }
