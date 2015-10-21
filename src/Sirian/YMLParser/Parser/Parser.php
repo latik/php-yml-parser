@@ -193,41 +193,47 @@ class Parser extends EventDispatcher
         ;
 
         foreach ($elem as $field => $value) {
-            if ($field == 'param') {
-                $offer->addParam(
-                    $this->createParam($value)
-                );
-            } elseif ($field == 'add_params') {
-                foreach ($value->add_param as $param) {
+            switch ($field) {
+                case 'param':
                     $offer->addParam(
-                        $this->createParam($param)
+                        $this->createParam($value)
                     );
-                }
-            } else {
-                foreach (['add', 'set'] as $method) {
-                    $method .= $this->camelize($field);
-                    if (method_exists($offer, $method)) {
-                        call_user_func([$offer, $method], count($value->children()) ? $value : (string)$value);
-                        break;
-                    } else {
-                        $value->addAttribute('name', $field);
-                        $offer->addParam($this->createParam($value));
+                    break;
+                case 'add_params':
+                    foreach ($value->add_param as $param) {
+                        $offer->addParam(
+                            $this->createParam($param)
+                        );
                     }
-                }
+                    break;
+                case 'categoryId':
+                    $categoryId = (string)$value;
+
+                    if ($shop->getCategory($categoryId)) {
+                        $offer->setCategory($shop->getCategory($categoryId));
+                    }
+                    break;
+                case 'currencyId':
+                    $currencyId = $this->fixCurrency((string)$elem->currencyId);
+
+                    if ($shop->getCurrency($currencyId)) {
+                        $offer->setCurrency($shop->getCurrency($currencyId));
+                    }
+                    break;
+                default:
+                    foreach (['add', 'set'] as $method) {
+                        $method .= $this->camelize($field);
+                        if (method_exists($offer, $method)) {
+                            call_user_func([$offer, $method], count($value->children()) ? $value : (string)$value);
+                            break;
+                        } else {
+                            $value->addAttribute('name', $field);
+                            $offer->addParam($this->createParam($value));
+                        }
+                    }
             }
         }
 
-        $currencyId = $this->fixCurrency((string)$elem->currencyId);
-
-        if ($shop->getCurrency($currencyId)) {
-            $offer->setCurrency($shop->getCurrency($currencyId));
-        }
-
-        $categoryId = (string)$elem->categoryId;
-
-        if ($shop->getCategory($categoryId)) {
-            $offer->setCategory($shop->getCategory($categoryId));
-        }
         return $offer;
     }
 
