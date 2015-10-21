@@ -206,13 +206,11 @@ class Parser extends EventDispatcher
             } else {
                 foreach (['add', 'set'] as $method) {
                     $method .= $this->camelize($field);
-                    if (!in_array($field, ['param', 'add_params'])) {
-                        if (method_exists($offer, $method)) {
-                            call_user_func([$offer, $method], count($value->children()) ? $value : (string)$value);
-                            break;
-                        } else {
-                            $offer->addParam($this->createParam($field, $value));
-                        }
+                    if (method_exists($offer, $method)) {
+                        call_user_func([$offer, $method], count($value->children()) ? $value : (string)$value);
+                        break;
+                    } else {
+                        $offer->addParam($this->createParam($field, $value));
                     }
                 }
             }
