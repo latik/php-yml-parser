@@ -189,16 +189,23 @@ class Parser extends EventDispatcher
             ->setType($type)
             ->setXml($elem);
 
+        /** @var \SimpleXMLElement $value */
         foreach ($elem as $field => $value) {
             $processed = false;
-            foreach ([$this, $offer] as $object) {
-                foreach (['add', 'set'] as $method) {
-                    $method .= $this->camelize($field);
-                    if (method_exists($object, $method)) {
-                        call_user_func([$object, $method], $value->children() ? $value : (string)$value, $offer, $shop);
-                        $processed = true;
-                        break(2);
-                    }
+            foreach (['add', 'set'] as $method) {
+                $method .= $this->camelize($field);
+                if (method_exists($this, $method)) {
+                    $this->$method($value, $offer, $shop);
+                    $processed = true;
+                    break;
+                }
+            }
+            foreach (['add', 'set'] as $method) {
+                $method .= $this->camelize($field);
+                if (method_exists($offer, $method)) {
+                    $offer->$method($value->children() ? $value : (string)$value);
+                    $processed = true;
+                    break;
                 }
             }
             if (!$processed) {
