@@ -200,12 +200,14 @@ class Parser extends EventDispatcher
                     break;
                 }
             }
-            foreach (['add', 'set'] as $method) {
-                $method .= $this->camelize($field);
-                if (method_exists($offer, $method)) {
-                    $offer->$method($value->children() ? $value : (string)$value);
-                    $processed = true;
-                    break;
+            if (!$processed) {
+                foreach (['add', 'set'] as $method) {
+                    $method .= $this->camelize($field);
+                    if (method_exists($offer, $method)) {
+                        $offer->$method($value->children() ? $value : (string)$value);
+                        $processed = true;
+                        break;
+                    }
                 }
             }
             if (!$processed) {
