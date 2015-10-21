@@ -159,14 +159,14 @@ class Parser extends EventDispatcher
         return $category;
     }
 
-    protected function createParam($name, $value, $unit = null)
+    protected function createParam(\SimpleXMLElement $elem)
     {
         $param = $this->factory->createParam();
 
         $param
-            ->setName((string)$name)
-            ->setUnit((string)$unit)
-            ->setValue((string)$value)
+            ->setName((string)$elem['name'])
+            ->setUnit((string)$elem['unit'])
+            ->setValue((string)$elem)
         ;
 
         return $param;
@@ -195,12 +195,12 @@ class Parser extends EventDispatcher
         foreach ($elem as $field => $value) {
             if ($field == 'param') {
                 $offer->addParam(
-                    $this->createParam($elem->$field['name'], $value, $elem->$field['unit'])
+                    $this->createParam($value)
                 );
             } elseif ($field == 'add_params') {
                 foreach ($value->add_param as $param) {
                     $offer->addParam(
-                        $this->createParam($param['name'], $param, $param['unit'])
+                        $this->createParam($param)
                     );
                 }
             } else {
@@ -210,7 +210,8 @@ class Parser extends EventDispatcher
                         call_user_func([$offer, $method], count($value->children()) ? $value : (string)$value);
                         break;
                     } else {
-                        $offer->addParam($this->createParam($field, $value));
+                        $value->addAttribute('name', $field);
+                        $offer->addParam($this->createParam($value));
                     }
                 }
             }
