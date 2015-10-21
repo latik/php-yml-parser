@@ -244,7 +244,7 @@ class Parser extends EventDispatcher
 
     protected function setCurrencyId(\SimpleXMLElement $elem, Offer $offer, Shop $shop)
     {
-        $currencyId = $this->fixCurrency((string)$elem->currencyId);
+        $currencyId = $this->fixCurrency((string)$elem);
 
         if ($shop->getCurrency($currencyId)) {
             $offer->setCurrency($shop->getCurrency($currencyId));
