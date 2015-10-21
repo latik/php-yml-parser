@@ -4,6 +4,8 @@ namespace Sirian\YMLParser\Parser;
 
 use Sirian\YMLParser\Exception\UnsupportedOfferTypeException;
 use Sirian\YMLParser\Factory\Factory;
+use Sirian\YMLParser\Offer\Offer;
+use Sirian\YMLParser\Offer\VendorModelOffer;
 use Sirian\YMLParser\Shop;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -114,8 +116,7 @@ class Parser extends EventDispatcher
             }
             $shop
                 ->getCategory($id)
-                ->setParent($parent)
-            ;
+                ->setParent($parent);
         }
         return $shop->getCategories();
     }
@@ -137,8 +138,7 @@ class Parser extends EventDispatcher
         $currency
             ->setId($id)
             ->setRate((string)$elem['rate'])
-            ->setPlus((int)$elem['plus'])
-        ;
+            ->setPlus((int)$elem['plus']);
 
         return $currency;
     }
@@ -153,8 +153,7 @@ class Parser extends EventDispatcher
 
         $category
             ->setId($id)
-            ->setName((string)$elem)
-        ;
+            ->setName((string)$elem);
 
         return $category;
     }
@@ -166,8 +165,7 @@ class Parser extends EventDispatcher
         $param
             ->setName((string)$elem['name'])
             ->setUnit((string)$elem['unit'])
-            ->setValue((string)$elem)
-        ;
+            ->setValue((string)$elem);
 
         return $param;
     }
@@ -189,52 +187,59 @@ class Parser extends EventDispatcher
             ->setId((string)$elem['id'])
             ->setAvailable(((string)$elem['available']) == 'true' ? true : false)
             ->setType($type)
-            ->setXml($elem)
-        ;
+            ->setXml($elem);
 
         foreach ($elem as $field => $value) {
-            switch ($field) {
-                case 'param':
-                    $offer->addParam(
-                        $this->createParam($value)
-                    );
-                    break;
-                case 'add_params':
-                    foreach ($value->add_param as $param) {
-                        $offer->addParam(
-                            $this->createParam($param)
-                        );
+            $processed = false;
+            foreach ([$this, $offer] as $object) {
+                foreach (['add', 'set'] as $method) {
+                    $method .= $this->camelize($field);
+                    if (method_exists($object, $method)) {
+                        call_user_func([$object, $method], $value->children() ? $value : (string)$value, $offer, $shop);
+                        $processed = true;
+                        break(2);
                     }
-                    break;
-                case 'categoryId':
-                    $categoryId = (string)$value;
-
-                    if ($shop->getCategory($categoryId)) {
-                        $offer->setCategory($shop->getCategory($categoryId));
-                    }
-                    break;
-                case 'currencyId':
-                    $currencyId = $this->fixCurrency((string)$elem->currencyId);
-
-                    if ($shop->getCurrency($currencyId)) {
-                        $offer->setCurrency($shop->getCurrency($currencyId));
-                    }
-                    break;
-                default:
-                    foreach (['add', 'set'] as $method) {
-                        $method .= $this->camelize($field);
-                        if (method_exists($offer, $method)) {
-                            call_user_func([$offer, $method], count($value->children()) ? $value : (string)$value);
-                            break;
-                        } else {
-                            $value->addAttribute('name', $field);
-                            $offer->addParam($this->createParam($value));
-                        }
-                    }
+                }
+            }
+            if (!$processed) {
+                $value->addAttribute('name', $field);
+                $this->addParam($value, $offer);
             }
         }
 
         return $offer;
+    }
+
+    protected function addParam(\SimpleXMLElement $elem, VendorModelOffer $offer)
+    {
+        $offer->addParam(
+            $this->createParam($elem)
+        );
+    }
+
+    protected function addAddParams(\SimpleXMLElement $elem, VendorModelOffer $offer)
+    {
+        foreach ($elem->add_param as $param) {
+            $this->addParam($param, $offer);
+        }
+    }
+
+    protected function setCategoryId(\SimpleXMLElement $elem, Offer $offer, Shop $shop)
+    {
+        $categoryId = (string)$elem;
+
+        if ($shop->getCategory($categoryId)) {
+            $offer->setCategory($shop->getCategory($categoryId));
+        }
+    }
+
+    protected function setCurrencyId(\SimpleXMLElement $elem, Offer $offer, Shop $shop)
+    {
+        $currencyId = $this->fixCurrency((string)$elem->currencyId);
+
+        if ($shop->getCurrency($currencyId)) {
+            $offer->setCurrency($shop->getCurrency($currencyId));
+        }
     }
 
     protected function loadElementXml()
