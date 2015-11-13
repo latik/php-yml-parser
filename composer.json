@@ -1,15 +1,22 @@
 {
-    "name": "sirian/yandex-market-language-parser",
+    "name": "latik/php-yml-parser",
     "description": "Yandex Market Language parser",
     "minimum-stability": "stable",
     "authors": [
         {
             "name": "Vasily Khayrulin",
             "email": "sirianru@gmail.com"
+        },
+        {
+            "name": "Ivan gillbeits",
+            "email": "gillbeits@gmail.com"
+        },
+        {
+            "name": "Denis Kop"
         }
     ],
     "require": {
-        "symfony/event-dispatcher": "~2.3"
+        "symfony/event-dispatcher": "@stable"
     },
     "autoload": {
         "psr-0": {
